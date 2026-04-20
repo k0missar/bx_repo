@@ -26,8 +26,10 @@ if (!empty($arResult['CURRENCIES']))
 	$currencyList = CUtil::PhpToJSObject($arResult['CURRENCIES'], false, true, true);
 }
 
+// Проверяет, если ть ли у товара торговые предложения
 $haveOffers = !empty($arResult['OFFERS']);
 
+// $templateData - по коду собирает данные в массив
 $templateData = [
 	'TEMPLATE_THEME' => $arParams['TEMPLATE_THEME'],
 	'TEMPLATE_LIBRARY' => $templateLibrary,
@@ -42,15 +44,23 @@ if ($haveOffers)
 	$templateData['ITEM']['OFFERS_SELECTED'] = $arResult['OFFERS_SELECTED'];
 	$templateData['ITEM']['JS_OFFERS'] = $arResult['JS_OFFERS'];
 }
+
+echo '<br><!--  BXDEBUG$templateData: <pre>' . print_r($templateData, 1) . '</pre>--><br>';
+echo '<br><!--  BXDEBUG$haveOffers: <pre>' . print_r($haveOffers, 1) . '</pre>--><br>';
+echo '<br><!--  BXDEBUG$currencyList: <pre>' . print_r($currencyList, 1) . '</pre>--><br>';
+echo '<br><!--  BXDEBUG$templateLibrary: <pre>' . print_r($templateLibrary, 1) . '</pre>--><br>';
+
 unset($currencyList, $templateLibrary);
 
 $mainId = $this->GetEditAreaId($arResult['ID']);
+
+// jsParams['VISUAL'] = $itemsIds - отвечает за визуал
 $itemIds = array(
 	'ID' => $mainId,
 	'DISCOUNT_PERCENT_ID' => $mainId.'_dsc_pict',
 	'STICKER_ID' => $mainId.'_sticker',
 	'BIG_SLIDER_ID' => $mainId.'_big_slider',
-	'BIG_IMG_CONT_ID' => $mainId.'_bigimg_cont',
+	'BIG_IMG_CONT_ID' => $mainId.'_bigimg_cont', // Не нашел в шаблоне
 	'SLIDER_CONT_ID' => $mainId.'_slider_cont',
 	'OLD_PRICE_ID' => $mainId.'_old_price',
 	'PRICE_ID' => $mainId.'_price',
@@ -73,13 +83,15 @@ $itemIds = array(
 	'DISPLAY_MAIN_PROP_DIV' => $mainId.'_main_sku_prop',
 	'OFFER_GROUP' => $mainId.'_set_group_',
 	'BASKET_PROP_DIV' => $mainId.'_basket_prop',
-	'SUBSCRIBE_LINK' => $mainId.'_subscribe',
+	'SUBSCRIBE_LINK' => $mainId.'_subscribe', // В СВОЕМ ШАБЛОНЕ МОЖНО НЕ ИСПОЛЬЗОВАТЬ - Скорее всего подписаться на товар
 	'TABS_ID' => $mainId.'_tabs',
 	'TAB_CONTAINERS_ID' => $mainId.'_tab_containers',
 	'SMALL_CARD_PANEL_ID' => $mainId.'_small_card_panel',
 	'TABS_PANEL_ID' => $mainId.'_tabs_panel'
 );
+// Будущее название переменной JS, сохраняет в себе вызов new JCCatalogElement
 $obName = $templateData['JS_OBJ'] = 'ob'.preg_replace('/[^a-zA-Z0-9_]/', 'x', $mainId);
+
 $name = !empty($arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE'])
 	? $arResult['IPROPERTY_VALUES']['ELEMENT_PAGE_TITLE']
 	: $arResult['NAME'];
@@ -216,14 +228,14 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 	<div class="row">
 
 		<div class="col-md">
-			<div class="product-item-detail-slider-container" id="<?=$itemIds['BIG_SLIDER_ID']?>">
+			<div class="BIG_SLIDER_ID product-item-detail-slider-container" id="<?=$itemIds['BIG_SLIDER_ID']?>">
 				<span class="product-item-detail-slider-close" data-entity="close-popup"></span>
 				<div class="product-item-detail-slider-block
 				<?=($arParams['IMAGE_RESOLUTION'] === '1by1' ? 'product-item-detail-slider-block-square' : '')?>"
 					data-entity="images-slider-block">
 					<span class="product-item-detail-slider-left" data-entity="slider-control-left" style="display: none;"></span>
 					<span class="product-item-detail-slider-right" data-entity="slider-control-right" style="display: none;"></span>
-					<div class="product-item-label-text <?=$labelPositionClass?>" id="<?=$itemIds['STICKER_ID']?>"
+					<div class="STICKER_ID product-item-label-text <?=$labelPositionClass?>" id="<?=$itemIds['STICKER_ID']?>"
 						<?=(!$arResult['LABEL'] ? 'style="display: none;"' : '' )?>>
 						<?php
 						if ($arResult['LABEL'] && !empty($arResult['LABEL_ARRAY_VALUE']))
@@ -245,7 +257,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 						if ($haveOffers)
 						{
 							?>
-							<div class="product-item-label-ring <?=$discountPositionClass?>"
+							<div class="DISCOUNT_PERCENT_ID product-item-label-ring <?=$discountPositionClass?>"
 								id="<?=$itemIds['DISCOUNT_PERCENT_ID']?>"
 								style="display: none;">
 							</div>
@@ -256,7 +268,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 							if ($price['DISCOUNT'] > 0)
 							{
 								?>
-								<div class="product-item-label-ring <?=$discountPositionClass?>"
+								<div class="DISCOUNT_PERCENT_ID product-item-label-ring <?=$discountPositionClass?>"
 									id="<?=$itemIds['DISCOUNT_PERCENT_ID']?>"
 									title="<?=-$price['PERCENT']?>%">
 									<span><?=-$price['PERCENT']?>%</span>
@@ -301,7 +313,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 
 							$strVisible = $arResult['OFFERS_SELECTED'] == $keyOffer ? '' : 'none';
 							?>
-							<div class="product-item-detail-slider-controls-block" id="<?=$itemIds['SLIDER_CONT_OF_ID'].$offer['ID']?>" style="display: <?=$strVisible?>;">
+							<div class="SLIDER_CONT_OF_ID product-item-detail-slider-controls-block" id="<?=$itemIds['SLIDER_CONT_OF_ID'].$offer['ID']?>" style="display: <?=$strVisible?>;">
 								<?php
 								foreach ($offer['MORE_PHOTO'] as $keyPhoto => $photo)
 								{
@@ -320,7 +332,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 					else
 					{
 						?>
-						<div class="product-item-detail-slider-controls-block" id="<?=$itemIds['SLIDER_CONT_ID']?>">
+						<div class="SLIDER_CONT_ID product-item-detail-slider-controls-block" id="<?=$itemIds['SLIDER_CONT_ID']?>">
 							<?php
 							if (!empty($actualItem['MORE_PHOTO']))
 							{
@@ -364,7 +376,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 									if ($showOffersBlock)
 									{
 										?>
-										<div class="mb-3" id="<?=$itemIds['TREE_ID']?>">
+										<div class="mb-3 TREE_ID" id="<?=$itemIds['TREE_ID']?>">
 											<?php
 											foreach ($arResult['SKU_PROPS'] as $skuProperty)
 											{
@@ -465,7 +477,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 											if ($arResult['SHOW_OFFERS_PROPS'])
 											{
 												?>
-												<ul class="product-item-detail-properties" id="<?=$itemIds['DISPLAY_MAIN_PROP_DIV']?>"></ul>
+												<ul class="DISPLAY_MAIN_PROP_DIV product-item-detail-properties" id="<?=$itemIds['DISPLAY_MAIN_PROP_DIV']?>"></ul>
 												<?php
 											}
 											?>
@@ -527,20 +539,20 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 										if ($arParams['SHOW_OLD_PRICE'] === 'Y')
 										{
 											?>
-											<div class="product-item-detail-price-old mb-1"
+											<div class="OLD_PRICE_ID product-item-detail-price-old mb-1"
 												id="<?=$itemIds['OLD_PRICE_ID']?>"
 												<?=($showDiscount ? '' : 'style="display: none;"')?>><?=($showDiscount ? $price['PRINT_RATIO_BASE_PRICE'] : '')?></div>
 											<?php
 										}
 										?>
 
-										<div class="product-item-detail-price-current mb-1" id="<?=$itemIds['PRICE_ID']?>"><?=$price['PRINT_RATIO_PRICE']?></div>
+										<div class="PRICE_ID product-item-detail-price-current mb-1" id="<?=$itemIds['PRICE_ID']?>"><?=$price['PRINT_RATIO_PRICE']?></div>
 
 										<?php
 										if ($arParams['SHOW_OLD_PRICE'] === 'Y')
 										{
 											?>
-											<div class="product-item-detail-economy-price mb-1"
+											<div class="DISCOUNT_PRICE_ID product-item-detail-economy-price mb-1"
 												id="<?=$itemIds['DISCOUNT_PRICE_ID']?>"
 												<?=($showDiscount ? '' : 'style="display: none;"')?>><?php
 												if ($showDiscount)
@@ -645,7 +657,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 										if ($haveOffers)
 										{
 											?>
-											<div class="mb-3" id="<?=$itemIds['QUANTITY_LIMIT']?>" style="display: none;">
+											<div class="mb-3 QUANTITY_LIMIT" id="<?=$itemIds['QUANTITY_LIMIT']?>" style="display: none;">
 												<div class="product-item-detail-info-container-title text-center">
 													<?=$arParams['MESS_SHOW_MAX_QUANTITY']?>:
 												</div>
@@ -662,7 +674,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 											)
 											{
 												?>
-												<div class="mb-3 text-center" id="<?=$itemIds['QUANTITY_LIMIT']?>">
+												<div class="mb-3 text-center QUANTITY_LIMIT" id="<?=$itemIds['QUANTITY_LIMIT']?>">
 													<span class="product-item-detail-info-container-title"><?=$arParams['MESS_SHOW_MAX_QUANTITY']?>:</span>
 													<span class="product-item-quantity" data-entity="quantity-limit-value">
 													<?php
@@ -707,15 +719,15 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 
 											<div class="product-item-amount">
 												<div class="product-item-amount-field-container">
-													<span class="product-item-amount-field-btn-minus no-select" id="<?=$itemIds['QUANTITY_DOWN_ID']?>"></span>
+													<span class="QUANTITY_DOWN_ID product-item-amount-field-btn-minus no-select" id="<?=$itemIds['QUANTITY_DOWN_ID']?>"></span>
 													<div class="product-item-amount-field-block">
-														<input class="product-item-amount-field" id="<?=$itemIds['QUANTITY_ID']?>" type="number" value="<?=$price['MIN_QUANTITY']?>">
+														<input class="QUANTITY_ID product-item-amount-field" id="<?=$itemIds['QUANTITY_ID']?>" type="number" value="<?=$price['MIN_QUANTITY']?>">
 														<span class="product-item-amount-description-container">
-														<span id="<?=$itemIds['QUANTITY_MEASURE']?>"><?=$actualItem['ITEM_MEASURE']['TITLE']?></span>
-														<span id="<?=$itemIds['PRICE_TOTAL']?>"></span>
+														<span class="QUANTITY_MEASURE" id="<?=$itemIds['QUANTITY_MEASURE']?>"><?=$actualItem['ITEM_MEASURE']['TITLE']?></span>
+														<span class="PRICE_TOTAL" id="<?=$itemIds['PRICE_TOTAL']?>"></span>
 													</span>
 													</div>
-													<span class="product-item-amount-field-btn-plus no-select" id="<?=$itemIds['QUANTITY_UP_ID']?>"></span>
+													<span class="QUANTITY_UP_ID product-item-amount-field-btn-plus no-select" id="<?=$itemIds['QUANTITY_UP_ID']?>"></span>
 												</div>
 											</div>
 										</div>
@@ -727,13 +739,13 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 								case 'buttons':
 									?>
 									<div data-entity="main-button-container" class="mb-3">
-										<div id="<?=$itemIds['BASKET_ACTIONS_ID']?>" style="display: <?=($actualItem['CAN_BUY'] ? '' : 'none')?>;">
+										<div class="BASKET_ACTIONS_ID" id="<?=$itemIds['BASKET_ACTIONS_ID']?>" style="display: <?=($actualItem['CAN_BUY'] ? '' : 'none')?>;">
 											<?php
 											if ($showAddBtn)
 											{
 												?>
 												<div class="mb-3">
-													<a class="btn <?=$showButtonClassName?> product-item-detail-buy-button"
+													<a class="ADD_BASKET_LINK btn <?=$showButtonClassName?> product-item-detail-buy-button"
 														id="<?=$itemIds['ADD_BASKET_LINK']?>"
 														href="javascript:void(0);">
 														<?=$arParams['MESS_BTN_ADD_TO_BASKET']?>
@@ -746,7 +758,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 											{
 												?>
 												<div class="mb-3">
-													<a class="btn <?=$buyButtonClassName?> product-item-detail-buy-button"
+													<a class="BUY_LINK btn <?=$buyButtonClassName?> product-item-detail-buy-button"
 														id="<?=$itemIds['BUY_LINK']?>"
 														href="javascript:void(0);">
 														<?=$arParams['MESS_BTN_BUY']?>
@@ -761,7 +773,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 									if ($showSubscribe)
 									{
 										?>
-										<div class="mb-3">
+										<div class="mb-3 SUBSCRIBE_LINK">
 											<?php
 											$APPLICATION->IncludeComponent(
 												'bitrix:catalog.product.subscribe',
@@ -782,7 +794,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 										<?php
 									}
 									?>
-									<div class="mb-3" id="<?=$itemIds['NOT_AVAILABLE_MESS']?>" style="display: <?=(!$actualItem['CAN_BUY'] ? '' : 'none')?>;">
+									<div class="NOT_AVAILABLE_MESS mb-3" id="<?=$itemIds['NOT_AVAILABLE_MESS']?>" style="display: <?=(!$actualItem['CAN_BUY'] ? '' : 'none')?>;">
 										<a class="btn btn-primary product-item-detail-buy-button" href="javascript:void(0)" rel="nofollow"><?=$arParams['MESS_NOT_AVAILABLE']?></a>
 									</div>
 									<?php
@@ -796,7 +808,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 							<div class="product-item-detail-compare-container">
 								<div class="product-item-detail-compare">
 									<div class="checkbox">
-										<label class="m-0" id="<?=$itemIds['COMPARE_LINK']?>">
+										<label class="COMPARE_LINK m-0" id="<?=$itemIds['COMPARE_LINK']?>">
 											<input type="checkbox" data-entity="compare-checkbox">
 											<span data-entity="compare-title"><?=$arParams['MESS_BTN_COMPARE']?></span>
 										</label>
@@ -824,7 +836,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 					foreach ($arResult['OFFER_GROUP_VALUES'] as $offerId)
 					{
 						?>
-						<span id="<?=$itemIds['OFFER_GROUP'].$offerId?>" style="display: none;">
+						<span id="<?=$itemIds['OFFER_GROUP'].$offerId?>" style="display: none;" class="OFFER_GROUP">
 							<?php
 							$APPLICATION->IncludeComponent(
 								'bitrix:catalog.set.constructor',
@@ -862,7 +874,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 		if ($arResult['MODULES']['catalog'] && $arResult['OFFER_GROUP'])
 		{
 			?>
-			<div class="row">
+			<div class="row OFFER_GROUP">
 				<div class="col">
 					<?php $APPLICATION->IncludeComponent(
 						'bitrix:catalog.set.constructor',
@@ -893,7 +905,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 
 	<div class="row">
 		<div class="col">
-			<div class="row" id="<?=$itemIds['TABS_ID']?>">
+			<div class="row TABS_ID" id="<?=$itemIds['TABS_ID']?>">
 				<div class="col">
 					<div class="product-item-detail-tabs-container">
 						<ul class="product-item-detail-tabs-list">
@@ -935,13 +947,13 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 					</div>
 				</div>
 			</div>
-			<div class="row" id="<?=$itemIds['TAB_CONTAINERS_ID']?>">
+			<div class="row TAB_CONTAINERS_ID" id="<?=$itemIds['TAB_CONTAINERS_ID']?>">
 				<div class="col">
 					<?php
 					if ($showDescription)
 					{
 						?>
-						<div class="product-item-detail-tab-content active"
+						<div class="product-item-detail-tab-content active DESCRIPTION_ID"
 							data-entity="tab-container"
 							data-value="description"
 							itemprop="description" id="<?=$itemIds['DESCRIPTION_ID']?>">
@@ -1000,7 +1012,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 							if ($arResult['SHOW_OFFERS_PROPS'])
 							{
 								?>
-								<ul class="product-item-detail-properties" id="<?=$itemIds['DISPLAY_PROP_DIV']?>"></ul>
+								<ul class="product-item-detail-properties DISPLAY_PROP_DIV" id="<?=$itemIds['DISPLAY_PROP_DIV']?>"></ul>
 								<?php
 							}
 							?>
@@ -1097,7 +1109,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 	</div>
 
 	<div class="row">
-		<div class="col">
+		<div class="col ADD_BASKET_LINK BUY_LINK">
 			<?php
 			if ($arResult['CATALOG'] && $actualItem['CAN_BUY'] && \Bitrix\Main\ModuleManager::isModuleInstalled('sale'))
 			{
@@ -1338,7 +1350,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 	</div>
 
 	<!--Small Card-->
-	<div class="p-2 product-item-detail-short-card-fixed d-none d-md-block" id="<?=$itemIds['SMALL_CARD_PANEL_ID']?>">
+	<div class="SMALL_CARD_PANEL_ID p-2 product-item-detail-short-card-fixed d-none d-md-block" id="<?=$itemIds['SMALL_CARD_PANEL_ID']?>">
 		<div class="product-item-detail-short-card-content-container">
 			<div class="product-item-detail-short-card-image">
 				<img src="" style="height: 65px;" data-entity="panel-picture">
@@ -1423,7 +1435,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 				<div class="product-item-detail-short-card-btn"
 					style="display: <?=($actualItem['CAN_BUY'] ? '' : 'none')?>;"
 					data-entity="panel-add-button">
-					<a class="btn <?=$showButtonClassName?> product-item-detail-buy-button"
+					<a class="ADD_BASKET_LINK btn <?=$showButtonClassName?> product-item-detail-buy-button"
 						id="<?=$itemIds['ADD_BASKET_LINK']?>"
 						href="javascript:void(0);">
 						<?=$arParams['MESS_BTN_ADD_TO_BASKET']?>
@@ -1438,7 +1450,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 				<div class="product-item-detail-short-card-btn"
 					style="display: <?=($actualItem['CAN_BUY'] ? '' : 'none')?>;"
 					data-entity="panel-buy-button">
-					<a class="btn <?=$buyButtonClassName?> product-item-detail-buy-button"
+					<a class="BUY_LINK btn <?=$buyButtonClassName?> product-item-detail-buy-button"
 						id="<?=$itemIds['BUY_LINK']?>"
 						href="javascript:void(0);">
 						<?=$arParams['MESS_BTN_BUY']?>
@@ -1458,7 +1470,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 		</div>
 	</div>
 	<!--Top tabs-->
-	<div class="pt-2 pb-0 product-item-detail-tabs-container-fixed d-none d-md-block" id="<?=$itemIds['TABS_PANEL_ID']?>">
+	<div class="TABS_PANEL_ID pt-2 pb-0 product-item-detail-tabs-container-fixed d-none d-md-block" id="<?=$itemIds['TABS_PANEL_ID']?>">
 		<ul class="product-item-detail-tabs-list">
 			<?php
 			if ($showDescription)
@@ -1728,7 +1740,7 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 		if ($arParams['ADD_PROPERTIES_TO_BASKET'] === 'Y' && !$emptyProductProperties)
 		{
 			?>
-			<div id="<?=$itemIds['BASKET_PROP_DIV']?>" style="display: none;">
+			<div class="BASKET_PROP_DIV" id="<?=$itemIds['BASKET_PROP_DIV']?>" style="display: none;">
 				<?php
 				if (!empty($arResult['PRODUCT_PROPERTIES_FILL']))
 				{
@@ -1906,4 +1918,9 @@ $themeClass = isset($arParams['TEMPLATE_THEME']) ? ' bx-'.$arParams['TEMPLATE_TH
 	var <?=$obName?> = new JCCatalogElement(<?=CUtil::PhpToJSObject($jsParams, false, true)?>);
 </script>
 <?php
+
+echo '<!--  BXDEBUG$actualItem: <pre>' . print_r($actualItem, 1) . '</pre>-->';
+echo '<!--  BXDEBUG$itemIds: <pre>' . print_r($itemIds, 1) . '</pre>-->';
+echo '<!--  BXDEBUG$jsParams: <pre>' . print_r($jsParams, 1) . '</pre>-->';
+
 unset($actualItem, $itemIds, $jsParams);
