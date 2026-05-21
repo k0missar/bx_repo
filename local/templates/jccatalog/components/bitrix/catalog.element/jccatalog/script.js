@@ -3,7 +3,13 @@
 
 	if (window.JCCatalogElement)
 		return;
-
+	/**
+	 * BasketButton — кнопка внутри popup-окна корзины.
+	 * @param {Object} params — параметры кнопки popup.
+	 * @param {string} params.text — текст на кнопке.
+	 * @param {Object|undefined} params.style — inline-стили для кнопки.
+	 * @returns {void}
+	 */
 	var BasketButton = function(params)
 	{
 		BasketButton.superclass.constructor.apply(this, arguments);
@@ -21,36 +27,62 @@
 	};
 	BX.extend(BasketButton, BX.PopupWindowButton);
 
+	/*
+		ЦЕПОЧКА ДАННЫХ В SKU-ТОВАРЕ:
+
+		$arResult / $arParams
+			↓
+		PHP собирает $jsParams
+			↓
+		new JCCatalogElement($jsParams)
+			↓
+		constructor сохраняет это в this.params
+			↓
+		initConfig() / initOffersData() / initBasketData() / initCompareData()
+		разносят данные по внутренним полям объекта
+			↓
+		init() находит DOM-элементы по VISUAL и data-entity
+			↓
+		setCurrent() берет текущий offer и обновляет интерфейс
+	*/
+
+	/* JCCatalogElement — основной клиентский контроллер карточки товара Bitrix.
+		* @param {Object} arParams — весь набор параметров, пришедший из PHP-шаблона.
+		* @returns {void}
+	*/
 	window.JCCatalogElement = function(arParams)
 	{
-		this.productType = 0;
+		this.productType = 0; // 'PRODUCT_TYPE' => 3,
 
+		// CONFIG = общие флаги поведения JS-компонента.
+		// Эти данные попадают в this.params.CONFIG,
+		// а затем в initConfig() раскладываются в this.config:
 		this.config = {
-			useCatalog: true,
-			showQuantity: true,
-			showPrice: true,
+			useCatalog: true, // Режим каталога: товар покупаемый, с ценами/корзиной. 'USE_CATALOG' => 1,
+			showQuantity: true, // Нужно ли JS работать с количеством. 'SHOW_QUANTITY' => 1,
+			showPrice: true, // Нужно ли JS обновлять цену. 'SHOW_PRICE' => 1,
 			showAbsent: true,
-			showOldPrice: false,
-			showPercent: false,
-			showSkuProps: false,
+			showOldPrice: false, // Нужно ли показывать старую цену. 'SHOW_OLD_PRICE' => 1
+			showPercent: false, // Нужно ли выводить процент скидки. 'SHOW_DISCOUNT_PERCENT' => 1
+			showSkuProps: false, // Нужно ли JS обновлять свойства выбранного offer. 'SHOW_SKU_PROPS' => 1,
 			showOfferGroup: false,
-			useCompare: false,
-			useStickers: false,
-			useSubscribe: false,
-			usePopup: false,
-			useMagnifier: false,
-			usePriceRanges: false,
-			basketAction: ['BUY'],
+			useCompare: false, // Включена ли логика сравнения. 'USE_PRICE_COUNT' => '',
+			useStickers: false, // 'USE_STICKERS' => 1,
+			useSubscribe: false, // 'USE_SUBSCRIBE' => 1,
+			usePopup: false, // Из массива режимов картинки JS включает popup / magnifier. 'MAIN_PICTURE_MODE' => [],
+			useMagnifier: false, // Из массива режимов картинки JS включает popup / magnifier. 'MAIN_PICTURE_MODE' => [],
+			usePriceRanges: false, // Режим диапазонов цен по количеству. 'USE_PRICE_COUNT' => '',
+			basketAction: ['BUY'], // Какие действия доступны: BUY / ADD. 'ADD_TO_BASKET_ACTION' => ['BUY'],
 			showClosePopup: false,
-			templateTheme: '',
-			showSlider: false,
-			sliderInterval: 5000,
-			useEnhancedEcommerce: false,
-			dataLayerName: 'dataLayer',
-			brandProperty: false,
-			alt: '',
-			title: '',
-			magnifierZoomPercent: 200
+			templateTheme: '', // Мусор
+			showSlider: false, // 'SHOW_SLIDER' => 'Y',
+			sliderInterval: 5000, // 'SLIDER_INTERVAL' => 5000,
+			useEnhancedEcommerce: false, // 'USE_ENHANCED_ECOMMERCE' => 'N',
+			dataLayerName: 'dataLayer', // 'DATA_LAYER_NAME' => '',
+			brandProperty: false, // 'BRAND_PROPERTY' => '',
+			alt: '', // Используется при подмене картинок. 'ALT' => '...',
+			title: '', // 'TITLE' => '...',
+			magnifierZoomPercent: 200 // 'MAGNIFIER_ZOOM_PERCENT' => 200,
 		};
 
 		this.checkQuantity = false;
@@ -95,6 +127,7 @@
 		};
 		this.mess = {};
 
+		// initBasketData()
 		this.basketData = {
 			useProps: false,
 			emptyProps: false,
@@ -136,9 +169,9 @@
 		this.quantityTimer = null;
 
 		this.obProduct = null;
-		this.obQuantity = null;
-		this.obQuantityUp = null;
-		this.obQuantityDown = null;
+		this.obQuantity = null; // 'QUANTITY_ID' => 'bx_..._quantity'
+		this.obQuantityUp = null; // 'QUANTITY_UP_ID' => 'bx_..._quant_up'
+		this.obQuantityDown = null; // 'QUANTITY_DOWN_ID' => 'bx_..._quant_down'
 		this.obPrice = {
 			price: null,
 			full: null,
@@ -146,24 +179,24 @@
 			percent: null,
 			total: null
 		};
-		this.obTree = null;
+		this.obTree = null; // 'TREE_ID' => 'bx_..._skudiv'
 		this.obPriceRanges = null;
-		this.obBuyBtn = null;
-		this.obAddToBasketBtn = null;
+		this.obBuyBtn = null; // 'BUY_LINK' => 'bx_..._buy_link',
+		this.obAddToBasketBtn = null; // 'BASKET_ACTIONS_ID' => 'bx_..._basket_actions'
 		this.obBasketActions = null;
-		this.obNotAvail = null;
-		this.obSubscribe = null;
-		this.obSkuProps = null;
-		this.obDescription = null;
-		this.obMainSkuProps = null;
+		this.obNotAvail = null; // 'NOT_AVAILABLE_MESS' => 'bx_..._not_avail'
+		this.obSubscribe = null; // 'SUBSCRIBE_LINK' => 'bx_..._subscribe'
+		this.obSkuProps = null; // 'DISPLAY_PROP_DIV' => 'bx_..._sku_prop'
+		this.obDescription = null; // 'DESCRIPTION_ID' => 'bx_..._description'
+		this.obMainSkuProps = null; // 'DISPLAY_MAIN_PROP_DIV' => 'bx_..._main_sku_prop',
 		this.obBigSlider = null;
 		this.obMeasure = null;
 		this.obQuantityLimit = {
 			all: null,
 			value: null
 		};
-		this.obCompare = null;
-		this.obTabsPanel = null;
+		this.obCompare = null; // 'COMPARE_LINK' => 'bx_..._compare_link'
+		this.obTabsPanel = null; // 'TABS_PANEL_ID' => 'bx_..._tabs_panel'
 
 		this.node = {};
 		// top panel small card
@@ -217,7 +250,7 @@
 				case 7: // service
 					this.initProductData();
 					break;
-				case 3: // sku
+				case 3: // sku Дальше по this.productType конструктор выбирает ветку SKU
 					this.initOffersData();
 					break;
 				default:
@@ -244,6 +277,13 @@
 	};
 
 	window.JCCatalogElement.prototype = {
+		/**
+		 * Возвращает первый DOM-элемент внутри parent по data-entity.
+		 * @param parent — DOM-родительский узел.
+		 * @param entity — значение data-entity.
+		 * @param additionalFilter — дополнительный CSS-префикс перед селектором.
+		 * @returns {HTMLElement|null}
+		 */
 		getEntity: function(parent, entity, additionalFilter)
 		{
 			if (!parent || !entity)
@@ -253,7 +293,13 @@
 
 			return parent.querySelector(additionalFilter + '[data-entity="' + entity + '"]');
 		},
-
+		/**
+		 * Возвращает список DOM-элементов внутри parent по data-entity.
+		 * @param parent — DOM-родительский узел.
+		 * @param entity — значение data-entity.
+		 * @param additionalFilter — дополнительный CSS-префикс перед селектором.
+		 * @returns {NodeList-like object}
+		 */
 		getEntities: function(parent, entity, additionalFilter)
 		{
 			if (!parent || !entity)
@@ -264,6 +310,12 @@
 			return parent.querySelectorAll(additionalFilter + '[data-entity="' + entity + '"]');
 		},
 
+		/**
+		 * Обработчик события Sale: товар помечен как подарок.
+		 * @param productId — ID товара, нужен для проверки совпадения события.
+		 * @param offerId — ID текущего оффера.
+		 * @returns {void}
+		 */
 		onSaleProductIsGift: function(productId, offerId)
 		{
 			if (offerId && this.offers && this.offers[this.offerNum].ID == offerId)
@@ -272,6 +324,12 @@
 			}
 		},
 
+		/**
+		 * Обработчик события Sale: товар больше не подарок.
+		 * @param productId — ID товара, нужен для проверки совпадения события.
+		 * @param offerId — ID текущего оффера.
+		 * @returns {void}
+		 */
 		onSaleProductIsNotGift: function(productId, offerId)
 		{
 			if (offerId && this.offers && this.offers[this.offerNum].ID == offerId)
@@ -282,6 +340,11 @@
 			}
 		},
 
+		/**
+		 * Переводит карточку в режим подарка и обновляет цену/стикер.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		reloadGiftInfo: function()
 		{
 			if (this.productType === 3)
@@ -294,6 +357,11 @@
 			}
 		},
 
+		/**
+		 * Помечает текущий товар/оффер как подарок и обновляет UI.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		setGift: function()
 		{
 			if (this.productType === 3)
@@ -316,25 +384,35 @@
 			this.reloadGiftInfo();
 		},
 
+		/**
+		 * Выбирает оффер по индексу и запускает пересчёт карточки.
+		 * @param offerNum — индекс оффера в this.offers.
+		 * @returns {void}
+		 */
 		setOffer: function(offerNum)
 		{
 			this.offerNum = parseInt(offerNum);
 			this.setCurrent();
 		},
 
+		/**
+		 * Находит DOM-узлы карточки, навешивает обработчики и стартует визуальную логику.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		init: function()
 		{
 			var i = 0,
 				j = 0,
 				treeItems = null;
 
-			this.obProduct = BX(this.visual.ID);
+			this.obProduct = BX(this.visual.ID); // 'ID' => 'bx_117848907_16',
 			if (!this.obProduct)
 			{
 				this.errorCode = -1;
 			}
 
-			this.obBigSlider = BX(this.visual.BIG_SLIDER_ID);
+			this.obBigSlider = BX(this.visual.BIG_SLIDER_ID); // 'BIG_SLIDER_ID' => 'bx_..._big_slider',
 			this.node.imageContainer = this.getEntity(this.obProduct, 'images-container');
 			this.node.imageSliderBlock = this.getEntity(this.obProduct, 'images-slider-block');
 			this.node.sliderProgressBar = this.getEntity(this.obProduct, 'slider-progress-bar');
@@ -348,7 +426,7 @@
 
 			if (this.config.showPrice)
 			{
-				this.obPrice.price = BX(this.visual.PRICE_ID);
+				this.obPrice.price = BX(this.visual.PRICE_ID); // 'PRICE_ID' => 'bx_..._price',
 				if (!this.obPrice.price && this.config.useCatalog)
 				{
 					this.errorCode = -16;
@@ -359,8 +437,8 @@
 
 					if (this.config.showOldPrice)
 					{
-						this.obPrice.full = BX(this.visual.OLD_PRICE_ID);
-						this.obPrice.discount = BX(this.visual.DISCOUNT_PRICE_ID);
+						this.obPrice.full = BX(this.visual.OLD_PRICE_ID); // 'OLD_PRICE_ID' => 'bx_..._old_price'
+						this.obPrice.discount = BX(this.visual.DISCOUNT_PRICE_ID); // 'DISCOUNT_PRICE_ID' => 'bx_..._price_discount'
 
 						if (!this.obPrice.full || !this.obPrice.discount)
 						{
@@ -370,7 +448,7 @@
 
 					if (this.config.showPercent)
 					{
-						this.obPrice.percent = BX(this.visual.DISCOUNT_PERCENT_ID);
+						this.obPrice.percent = BX(this.visual.DISCOUNT_PERCENT_ID); // 'DISCOUNT_PERCENT_ID' => 'bx_..._dsc_pict'
 						if (!this.obPrice.percent)
 						{
 							this.config.showPercent = false;
@@ -383,29 +461,29 @@
 				{
 					if (BX.util.in_array('BUY', this.config.basketAction))
 					{
-						this.obBuyBtn = BX(this.visual.BUY_LINK);
+						this.obBuyBtn = BX(this.visual.BUY_LINK); // 'BUY_LINK' => 'bx_..._buy_link',
 					}
 
 					if (BX.util.in_array('ADD', this.config.basketAction))
 					{
-						this.obAddToBasketBtn = BX(this.visual.ADD_BASKET_LINK);
+						this.obAddToBasketBtn = BX(this.visual.ADD_BASKET_LINK); // 'BASKET_ACTIONS_ID' => 'bx_..._basket_actions'
 					}
 				}
-				this.obNotAvail = BX(this.visual.NOT_AVAILABLE_MESS);
+				this.obNotAvail = BX(this.visual.NOT_AVAILABLE_MESS); // 'NOT_AVAILABLE_MESS' => 'bx_..._not_avail'
 			}
 
 			if (this.config.showQuantity)
 			{
-				this.obQuantity = BX(this.visual.QUANTITY_ID);
+				this.obQuantity = BX(this.visual.QUANTITY_ID); // 'QUANTITY_ID' => 'bx_..._quantity'
 				this.node.quantity = this.getEntity(this.obProduct, 'quantity-block');
 				if (this.visual.QUANTITY_UP_ID)
 				{
-					this.obQuantityUp = BX(this.visual.QUANTITY_UP_ID);
+					this.obQuantityUp = BX(this.visual.QUANTITY_UP_ID); // 'QUANTITY_UP_ID' => 'bx_..._quant_up'
 				}
 
 				if (this.visual.QUANTITY_DOWN_ID)
 				{
-					this.obQuantityDown = BX(this.visual.QUANTITY_DOWN_ID);
+					this.obQuantityDown = BX(this.visual.QUANTITY_DOWN_ID); // 'QUANTITY_DOWN_ID' => 'bx_..._quant_down'
 				}
 			}
 
@@ -413,7 +491,7 @@
 			{
 				if (this.visual.TREE_ID)
 				{
-					this.obTree = BX(this.visual.TREE_ID);
+					this.obTree = BX(this.visual.TREE_ID); // 'TREE_ID' => 'bx_..._skudiv'
 					if (!this.obTree)
 					{
 						this.errorCode = -256;
@@ -425,7 +503,7 @@
 					this.obMeasure = BX(this.visual.QUANTITY_MEASURE);
 				}
 
-				if (this.visual.QUANTITY_LIMIT && this.config.showMaxQuantity !== 'N')
+				if (this.visual.QUANTITY_LIMIT && this.config.showMaxQuantity !== 'N') // Как работать с остатками.
 				{
 					this.obQuantityLimit.all = BX(this.visual.QUANTITY_LIMIT);
 					if (this.obQuantityLimit.all)
@@ -446,30 +524,30 @@
 
 			if (this.config.showSkuProps)
 			{
-				this.obSkuProps = BX(this.visual.DISPLAY_PROP_DIV);
-				this.obMainSkuProps = BX(this.visual.DISPLAY_MAIN_PROP_DIV);
+				this.obSkuProps = BX(this.visual.DISPLAY_PROP_DIV); // 'DISPLAY_PROP_DIV' => 'bx_..._sku_prop'
+				this.obMainSkuProps = BX(this.visual.DISPLAY_MAIN_PROP_DIV); // 'DISPLAY_MAIN_PROP_DIV' => 'bx_..._main_sku_prop',
 			}
 
 			if (this.config.showSkuDescription === 'Y')
 			{
-				this.obDescription = BX(this.visual.DESCRIPTION_ID);
+				this.obDescription = BX(this.visual.DESCRIPTION_ID); // 'DESCRIPTION_ID' => 'bx_..._description'
 			}
 
 			if (this.config.useCompare)
 			{
-				this.obCompare = BX(this.visual.COMPARE_LINK);
+				this.obCompare = BX(this.visual.COMPARE_LINK); // 'COMPARE_LINK' => 'bx_..._compare_link'
 			}
 
 			if (this.config.useSubscribe)
 			{
-				this.obSubscribe = BX(this.visual.SUBSCRIBE_LINK);
+				this.obSubscribe = BX(this.visual.SUBSCRIBE_LINK); // 'SUBSCRIBE_LINK' => 'bx_..._subscribe'
 			}
 
-			this.obTabs = BX(this.visual.TABS_ID);
-			this.obTabContainers = BX(this.visual.TAB_CONTAINERS_ID);
-			this.obTabsPanel = BX(this.visual.TABS_PANEL_ID);
+			this.obTabs = BX(this.visual.TABS_ID); // 'TABS_ID' => 'bx_..._tabs'
+			this.obTabContainers = BX(this.visual.TAB_CONTAINERS_ID); // 'TAB_CONTAINERS_ID' => 'bx_..._tab_containers'
+			this.obTabsPanel = BX(this.visual.TABS_PANEL_ID); // 'TABS_PANEL_ID' => 'bx_..._tabs_panel'
 
-			this.smallCardNodes.panel = BX(this.visual.SMALL_CARD_PANEL_ID);
+			this.smallCardNodes.panel = BX(this.visual.SMALL_CARD_PANEL_ID); // 'SMALL_CARD_PANEL_ID' => 'bx_..._small_card_panel'
 			if (this.smallCardNodes.panel)
 			{
 				this.smallCardNodes.picture = this.getEntity(this.smallCardNodes.panel, 'panel-picture');
@@ -545,7 +623,7 @@
 					}
 				}
 
-				switch (this.productType)
+				switch (this.productType) // 'PRODUCT_TYPE' => 3,
 				{
 					case 0: // no catalog
 					case 1: // product
@@ -644,6 +722,12 @@
 			}
 		},
 
+		/**
+		 * Читает CONFIG/VISUAL из arParams и заполняет this.config/this.visual.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
+		// Обрабатывает параметры params.CONFIG раскладывается по this.config
 		initConfig: function()
 		{
 			if (this.params.PRODUCT_TYPE)
@@ -665,7 +749,7 @@
 			this.config.useCompare = this.params.CONFIG.DISPLAY_COMPARE;
 			this.config.useStickers = this.params.CONFIG.USE_STICKERS;
 			this.config.useSubscribe = this.params.CONFIG.USE_SUBSCRIBE;
-			this.config.showMaxQuantity = this.params.CONFIG.SHOW_MAX_QUANTITY;
+			this.config.showMaxQuantity = this.params.CONFIG.SHOW_MAX_QUANTITY; // Как работать с остатками.
 			this.config.relativeQuantityFactor = parseInt(this.params.CONFIG.RELATIVE_QUANTITY_FACTOR);
 			this.config.usePriceRanges = this.params.CONFIG.USE_PRICE_COUNT;
 			this.config.showSkuDescription = this.params.CONFIG.SHOW_SKU_DESCRIPTION;
@@ -713,6 +797,12 @@
 			this.visual = this.params.VISUAL;
 		},
 
+
+		/**
+		 * Читает данные обычного товара/сета/услуги и заполняет this.product.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		initProductData: function()
 		{
 			var j = 0;
@@ -799,10 +889,36 @@
 			}
 		},
 
+		/**
+		 * Читает массив офферов и данные товара для SKU-режима.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		initOffersData: function()
 		{
+			// В SKU-ветке PRODUCT = базовый товар.
+			// Эти данные попадают в this.params.PRODUCT,
+			// а затем в initOffersData() раскладываются в this.product:
 			if (this.params.OFFERS && BX.type.isArray(this.params.OFFERS))
 			{
+				/*
+					OFFERS = главный массив торговых предложений для фронта.
+					Попадает в this.params.OFFERS,
+					затем в initOffersData() сохраняется в this.offers.
+
+					Дальше выбранный offer берется как:
+					this.offers[this.offerNum]
+
+					Именно из текущего offer потом берутся:
+					- цена
+					- картинки
+					- canBuy
+					- остатки
+					- шаг количества
+					- measure
+					- display properties
+					- TREE (значения SKU)
+				*/
 				this.offers = this.params.OFFERS;
 				this.offerNum = 0;
 
@@ -817,20 +933,20 @@
 				}
 
 				if (this.params.DEFAULT_PICTURE)
-				{
+				{ // Запасные картинки, если у offer нет своей.
 					this.defaultPict.preview = this.params.DEFAULT_PICTURE.PREVIEW_PICTURE;
 					this.defaultPict.detail = this.params.DEFAULT_PICTURE.DETAIL_PICTURE;
 				}
 
 				if (this.params.PRODUCT && typeof this.params.PRODUCT === 'object')
 				{
-					this.product.id = parseInt(this.params.PRODUCT.ID, 10);
-					this.product.name = this.params.PRODUCT.NAME;
-					this.product.category = this.params.PRODUCT.CATEGORY;
-					this.product.detailText = this.params.PRODUCT.DETAIL_TEXT;
-					this.product.detailTextType = this.params.PRODUCT.DETAIL_TEXT_TYPE;
-					this.product.previewText = this.params.PRODUCT.PREVIEW_TEXT;
-					this.product.previewTextType = this.params.PRODUCT.PREVIEW_TEXT_TYPE;
+					this.product.id = parseInt(this.params.PRODUCT.ID, 10); // 'ID' => 16,
+					this.product.name = this.params.PRODUCT.NAME; // 'NAME' => 'Нижнее белье Розовое Смущенье',
+					this.product.category = this.params.PRODUCT.CATEGORY; // 'CATEGORY' => 'Нижнее белье',
+					this.product.detailText = this.params.PRODUCT.DETAIL_TEXT; // 'DETAIL_TEXT' => '...',
+					this.product.detailTextType = this.params.PRODUCT.DETAIL_TEXT_TYPE; // 'DETAIL_TEXT_TYPE' => 'html',
+					this.product.previewText = this.params.PRODUCT.PREVIEW_TEXT; // 'PREVIEW_TEXT' => '',
+					this.product.previewTextType = this.params.PRODUCT.PREVIEW_TEXT_TYPE; // 'PREVIEW_TEXT_TYPE' => 'text',
 				}
 			}
 			else
@@ -839,10 +955,18 @@
 			}
 		},
 
+		/**
+		 * Читает настройки корзины, URL и названия полей для AJAX-запроса.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		initBasketData: function()
 		{
 			if (this.params.BASKET && typeof this.params.BASKET === 'object')
 			{
+				// BASKET = параметры добавления в корзину.
+				// Попадает в this.params.BASKET,
+				// а затем в initBasketData() раскладывается в this.basketData:
 				if (
 					this.productType === 1
 					|| this.productType === 2
@@ -854,17 +978,17 @@
 				}
 
 				if (this.params.BASKET.QUANTITY)
-				{
+				{ // имя поля количества в запросе 'QUANTITY' => 'quantity',
 					this.basketData.quantity = this.params.BASKET.QUANTITY;
 				}
 
 				if (this.params.BASKET.PROPS)
-				{
+				{ // закодированный набор sku-свойств для отправки в корзину 'SKU_PROPS' => '...',
 					this.basketData.props = this.params.BASKET.PROPS;
 				}
 
 				if (this.params.BASKET.BASKET_URL)
-				{
+				{ // 'BASKET_URL' => '/personal/cart/',
 					this.basketData.basketUrl = this.params.BASKET.BASKET_URL;
 				}
 
@@ -877,12 +1001,12 @@
 				}
 
 				if (this.params.BASKET.ADD_URL_TEMPLATE)
-				{
+				{ // 'ADD_URL_TEMPLATE' => '/catalog/...action=ADD2BASKET&id=#ID#',
 					this.basketData.add_url = this.params.BASKET.ADD_URL_TEMPLATE;
 				}
 
 				if (this.params.BASKET.BUY_URL_TEMPLATE)
-				{
+				{ // 'BUY_URL_TEMPLATE' => '/catalog/...action=BUY&id=#ID#',
 					this.basketData.buy_url = this.params.BASKET.BUY_URL_TEMPLATE;
 				}
 
@@ -893,6 +1017,11 @@
 			}
 		},
 
+		/**
+		 * Читает настройки сравнения и валидирует compare URL.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		initCompareData: function()
 		{
 			if (this.config.useCompare)
@@ -929,6 +1058,11 @@
 			}
 		},
 
+		/**
+		 * Создаёт анимацию прогресса и запускает автопрокрутку слайдера.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		initSlider: function()
 		{
 			if (this.node.sliderProgressBar)
@@ -951,6 +1085,11 @@
 			this.cycleSlider();
 		},
 
+		/**
+		 * Кладёт ecommerce-событие в dataLayer.
+		 * @param action — тип ecommerce-события (showDetail/addToCart).
+		 * @returns {void}
+		 */
 		setAnalyticsDataLayer: function(action)
 		{
 			if (!this.config.useEnhancedEcommerce || !this.config.dataLayerName)
@@ -1056,6 +1195,11 @@
 			window[this.config.dataLayerName].push(info);
 		},
 
+		/**
+		 * Навешивает обработчики на вкладки и показывает первую активную вкладку.
+		 * Параметров нет.
+		 * @returns {void}
+		 */
 		initTabs: function()
 		{
 			var tabs = this.getEntities(this.obTabs, 'tab'),
@@ -1098,6 +1242,11 @@
 			}
 		},
 
+		/**
+		 * Проверяет, соответствует ли событие текущему touch-указателю.
+		 * @param event — DOM-евент.
+		 * @returns {boolean}
+		 */
 		checkTouch: function(event)
 		{
 			if (!event || !event.changedTouches)

@@ -16,7 +16,7 @@ use Bitrix\Main\Loader;
 use Bitrix\Main\ModuleManager;
 
 $this->setFrameMode(true);
-
+var_dump('BOOTSTRAP_V4');
 // МУСОРНЫЙ КОД ДЛЯ ШАБЛОНА
 if (isset($arParams['USE_COMMON_SETTINGS_BASKET_POPUP']) && $arParams['USE_COMMON_SETTINGS_BASKET_POPUP'] == 'Y')
 {

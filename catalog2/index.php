@@ -2,12 +2,23 @@
 /**
  * @var CMain $APPLICATION
  */
-require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php"); ?>
+require($_SERVER["DOCUMENT_ROOT"]."/bitrix/header.php");
+
+use Bitrix\Main\Application;
+
+$request = Application::getInstance()->getContext()->getRequest();
+$isJCCatalog = $request->get('t') === 'y';
+$template = 'bootstrap_v4';
+if ($isJCCatalog) {
+	$template = 'jccatalog';
+}
+?>
 
 <?php $APPLICATION->IncludeComponent(
 	"bitrix:catalog",
-	"jccatalog", // Оригинал bootstrap_v4 - это его переименованный шаблон
+	$template, // Оригинал bootstrap_v4 - это его переименованный шаблон
 	array(
+		"DETAIL_ADD_TO_BASKET_ACTION" => "ADD",
 		// ОБЯЗАТЛЕЬНЫЕ
 		"IBLOCK_TYPE" => "catalog",
 		"IBLOCK_ID" => "2",
